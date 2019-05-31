@@ -1,0 +1,85 @@
+package licensechecker
+
+var (
+	DefaultConfigs = []Config{
+		Config{
+			Pattern: "github.com", // will be replace to raw.githubusercontent.com to get license file
+			URLType: URLGithub,
+			LicenseURLs: []string{
+				"{{URL}}/master/LICENSE",
+				"{{URL}}/master/LICENSE.md",
+				"{{URL}}/master/LICENSE.txt",
+				"{{URL}}/master/License",
+				"{{URL}}/master/License.md",
+				"{{URL}}/master/License.txt",
+				"{{url}}/master/license",
+				"{{url}}/master/license.md",
+				"{{url}}/master/license.txt",
+				"{{URL}}/master/README",
+				"{{URL}}/master/README.md",
+				"{{URL}}/master/README.txt",
+				"{{URL}}/master/Readme",
+				"{{URL}}/master/Readme.md",
+				"{{URL}}/master/Readme.txt",
+				"{{url}}/master/readme",
+				"{{url}}/master/readme.md",
+				"{{url}}/master/readme.txt",
+			},
+		},
+		Config{
+			Pattern: "githubusercontent.com",
+			URLType: URLGithub,
+			LicenseURLs: []string{
+				"{{URL}}/master/LICENSE",
+				"{{URL}}/master/LICENSE.md",
+				"{{URL}}/master/LICENSE.txt",
+				"{{URL}}/master/License",
+				"{{URL}}/master/License.md",
+				"{{URL}}/master/License.txt",
+				"{{url}}/master/license",
+				"{{url}}/master/license.md",
+				"{{url}}/master/license.txt",
+				"{{URL}}/master/README",
+				"{{URL}}/master/README.md",
+				"{{URL}}/master/README.txt",
+				"{{URL}}/master/Readme",
+				"{{URL}}/master/Readme.md",
+				"{{URL}}/master/Readme.txt",
+				"{{url}}/master/readme",
+				"{{url}}/master/readme.md",
+				"{{url}}/master/readme.txt",
+			},
+		},
+		Config{
+			Pattern: "golang.org", // will be replace to raw.githubusercontent.com to get license file
+			URLType: URLGithub,
+			LicenseURLs: []string{
+				"{{URL}}/master/LICENSE",
+				"{{URL}}/master/LICENSE.md",
+				"{{URL}}/master/LICENSE.txt",
+				"{{URL}}/master/License",
+				"{{URL}}/master/License.md",
+				"{{URL}}/master/License.txt",
+				"{{url}}/master/license",
+				"{{url}}/master/license.md",
+				"{{url}}/master/license.txt",
+				"{{URL}}/master/README",
+				"{{URL}}/master/README.md",
+				"{{URL}}/master/README.txt",
+				"{{URL}}/master/Readme",
+				"{{URL}}/master/Readme.md",
+				"{{URL}}/master/Readme.txt",
+				"{{url}}/master/readme",
+				"{{url}}/master/readme.md",
+				"{{url}}/master/readme.txt",
+			},
+		},
+		Config{
+			Pattern: "",
+			URLType: URLUnknow,
+			LicenseURLs: []string{
+				"{{URL}}",
+			},
+		},
+	}
+)
