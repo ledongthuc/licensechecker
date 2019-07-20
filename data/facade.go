@@ -2,9 +2,14 @@ package data
 
 import (
 	"encoding/json"
+	"reflect"
 
 	"github.com/ledongthuc/licensechecker/data/toc"
 	"github.com/pkg/errors"
+)
+
+var (
+	ErrorUninitiatedContainer = errors.New("Can't compose licenses into uninitiated container")
 )
 
 type license struct {
@@ -23,6 +28,18 @@ type license struct {
 	ReleaseDate string `json:"releaseDate"`
 }
 
+func (e license) contains(info LicenseInfo) bool {
+	for _, exception := range e.Licenses {
+		if info.ID == exception.LicenseID &&
+			info.Name == exception.Name &&
+			info.IsDeprecated == exception.IsDeprecatedLicenseID &&
+			reflect.DeepEqual(info.References, exception.SeeAlso) {
+			return true
+		}
+	}
+	return false
+}
+
 type exception struct {
 	LicenseListVersion string `json:"licenseListVersion"`
 	ReleaseDate        string `json:"releaseDate"`
@@ -35,6 +52,18 @@ type exception struct {
 		SeeAlso               []string `json:"seeAlso"`
 		LicenseExceptionID    string   `json:"licenseExceptionId"`
 	} `json:"exceptions"`
+}
+
+func (e exception) contains(info LicenseInfo) bool {
+	for _, exception := range e.Exceptions {
+		if info.ID == exception.LicenseExceptionID &&
+			info.Name == exception.Name &&
+			info.IsDeprecated == exception.IsDeprecatedLicenseID &&
+			reflect.DeepEqual(info.References, exception.SeeAlso) {
+			return true
+		}
+	}
+	return false
 }
 
 // LicenseInfo contains meta data of license like ID, nice name, reference urls/resources or license is deprecated
@@ -54,37 +83,48 @@ const (
 func GetLicenseInfo() (map[string]LicenseInfo, error) {
 	result := make(map[string]LicenseInfo)
 
-	// Load Main license
-	raw, err := toc.Asset(listLicenses)
+	// standard license
+	standardLicenses, err := LoadStandardLicenses()
 	if err != nil {
-		return result, errors.Wrap(err, "Error when load license info")
+		return result, err
+	}
+	err = convertStandardLicenses(result, standardLicenses)
+	if err != nil {
+		return result, err
 	}
 
-	var mainLicense license
-	err = json.Unmarshal(raw, &mainLicense)
+	// exception license
+	exceptionLicenses, err := LoadExceptionLicenses()
 	if err != nil {
-		return result, errors.Wrap(err, "Error when parsing license info")
+		return result, err
 	}
-	loadLicenses(result, mainLicense)
-
-	// Load Exception license
-	var exceptionLicense exception
-	raw, err = toc.Asset(listExceptions)
+	err = convertExceptionLicenses(result, exceptionLicenses)
 	if err != nil {
-		return result, errors.Wrap(err, "Error when load main license info")
+		return result, err
 	}
-	err = json.Unmarshal(raw, &exceptionLicense)
-	if err != nil {
-		return result, errors.Wrap(err, "Error when parsing license info")
-	}
-	loadExceptionLicenses(result, exceptionLicense)
 
 	return result, nil
 }
 
-func loadLicenses(container map[string]LicenseInfo, ls license) error {
+// LoadStandardLicenses loads all standard licenses from asset resouce
+func LoadStandardLicenses() (license, error) {
+	raw, err := toc.Asset(listLicenses)
+	if err != nil {
+		return license{}, errors.Wrap(err, "Error when load license info")
+	}
+
+	var standardLicenses license
+	err = json.Unmarshal(raw, &standardLicenses)
+	if err != nil {
+		return license{}, errors.Wrap(err, "Error when parsing license info")
+	}
+	return standardLicenses, nil
+}
+
+// convertStandardLicenses will load standard licenses into a map.
+func convertStandardLicenses(container map[string]LicenseInfo, ls license) error {
 	if container == nil {
-		return errors.New("Container shouldn't nil")
+		return ErrorUninitiatedContainer
 	}
 	for _, l := range ls.Licenses {
 		container[l.LicenseID] = LicenseInfo{
@@ -97,9 +137,25 @@ func loadLicenses(container map[string]LicenseInfo, ls license) error {
 	return nil
 }
 
-func loadExceptionLicenses(container map[string]LicenseInfo, ls exception) error {
+// LoadExceptionLicenses loads all standard licenses from asset resouce
+func LoadExceptionLicenses() (exception, error) {
+	var exceptionLicense exception
+	raw, err := toc.Asset(listExceptions)
+	if err != nil {
+		return exception{}, errors.Wrap(err, "Error when load main license info")
+	}
+
+	err = json.Unmarshal(raw, &exceptionLicense)
+	if err != nil {
+		return exception{}, errors.Wrap(err, "Error when parsing license info")
+	}
+	return exceptionLicense, nil
+}
+
+// convertExceptionLicenses will load all exception licenses into a map.
+func convertExceptionLicenses(container map[string]LicenseInfo, ls exception) error {
 	if container == nil {
-		return errors.New("Container shouldn't nil")
+		return ErrorUninitiatedContainer
 	}
 	for _, l := range ls.Exceptions {
 		container[l.LicenseExceptionID] = LicenseInfo{
