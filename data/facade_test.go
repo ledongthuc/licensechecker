@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ledongthuc/licensechecker/data/data"
 	"github.com/ledongthuc/licensechecker/data/toc"
 	"github.com/pkg/errors"
 )
@@ -79,24 +80,24 @@ func Test_convertStandardLicenses(t *testing.T) {
 			},
 			expected: map[string]LicenseInfo{
 				"0BSD": LicenseInfo{
-					ID:   "0BSD",
-					Name: "BSD Zero Clause License",
+					LicenseID: "0BSD",
+					Name:      "BSD Zero Clause License",
 					References: []string{
 						"http://landley.net/toybox/license.html",
 					},
 					IsDeprecated: false,
 				},
 				"AAL": LicenseInfo{
-					ID:   "AAL",
-					Name: "Attribution Assurance License",
+					LicenseID: "AAL",
+					Name:      "Attribution Assurance License",
 					References: []string{
 						"https://opensource.org/licenses/attribution",
 					},
 					IsDeprecated: false,
 				},
 				"AGPL-3.0": LicenseInfo{
-					ID:   "AGPL-3.0",
-					Name: "GNU Affero General Public License v3.0",
+					LicenseID: "AGPL-3.0",
+					Name:      "GNU Affero General Public License v3.0",
 					References: []string{
 						"https://www.gnu.org/licenses/agpl.txt",
 						"https://opensource.org/licenses/AGPL-3.0",
@@ -213,16 +214,16 @@ func Test_convertExceptionLicenses(t *testing.T) {
 			},
 			expected: map[string]LicenseInfo{
 				"Libtool-exception": LicenseInfo{
-					ID:   "Libtool-exception",
-					Name: "Libtool Exception",
+					LicenseID: "Libtool-exception",
+					Name:      "Libtool Exception",
 					References: []string{
 						"http://git.savannah.gnu.org/cgit/libtool.git/tree/m4/libtool.m4",
 					},
 					IsDeprecated: false,
 				},
 				"Classpath-exception-2.0": LicenseInfo{
-					ID:   "Classpath-exception-2.0",
-					Name: "Classpath exception 2.0",
+					LicenseID: "Classpath-exception-2.0",
+					Name:      "Classpath exception 2.0",
 					References: []string{
 						"http://www.gnu.org/software/classpath/license.html",
 						"https://fedoraproject.org/wiki/Licensing/GPL_Classpath_Exception",
@@ -230,8 +231,8 @@ func Test_convertExceptionLicenses(t *testing.T) {
 					IsDeprecated: false,
 				},
 				"Nokia-Qt-exception-1.1": LicenseInfo{
-					ID:   "Nokia-Qt-exception-1.1",
-					Name: "Nokia Qt LGPL exception 1.1",
+					LicenseID: "Nokia-Qt-exception-1.1",
+					Name:      "Nokia Qt LGPL exception 1.1",
 					References: []string{
 						"https://www.keepassx.org/dev/projects/keepassx/repository/revisions/b8dfb9cc4d5133e0f09cd7533d15a4f1c19a40f2/entry/LICENSE.NOKIA-LGPL-EXCEPTION",
 					},
@@ -288,13 +289,13 @@ func TestGetLicenseInfo(t *testing.T) {
 		return
 	}
 
-	standardLicenses, err := LoadStandardLicenses()
+	standardLicenses, err := loadStandardLicenses()
 	if err != nil {
 		t.Errorf("LoadStandardLicenses() got error: %v", err)
 		return
 	}
 
-	exceptionLicenses, err := LoadExceptionLicenses()
+	exceptionLicenses, err := loadExceptionLicenses()
 	if err != nil {
 		t.Errorf("TestLoadExceptionLicenses() got error: %v", err)
 		return
@@ -305,8 +306,8 @@ func TestGetLicenseInfo(t *testing.T) {
 		return
 	}
 	for licenseKey, licenseInfo := range m {
-		if licenseKey != licenseInfo.ID {
-			t.Errorf("LicenseKey '%s' != licenseInfo.ID '%s'", licenseKey, licenseInfo.ID)
+		if licenseKey != licenseInfo.LicenseID {
+			t.Errorf("LicenseKey '%s' != licenseInfo.ID '%s'", licenseKey, licenseInfo.LicenseID)
 		}
 		if standardLicenses.contains(licenseInfo) || exceptionLicenses.contains(licenseInfo) {
 			continue
@@ -315,15 +316,15 @@ func TestGetLicenseInfo(t *testing.T) {
 	}
 }
 
-func TestLoadStandardLicenses(t *testing.T) {
-	l, err := LoadStandardLicenses()
+func Test_loadStandardLicenses(t *testing.T) {
+	l, err := loadStandardLicenses()
 	if err != nil {
-		t.Errorf("LoadStandardLicenses() got error: %v", err)
+		t.Errorf("loadStandardLicenses() got error: %v", err)
 		return
 	}
 	reversedLicense, err := json.Marshal(l)
 	if err != nil {
-		t.Errorf("LoadStandardLicenses() output can't reverse")
+		t.Errorf("loadStandardLicenses() output can't reverse")
 		return
 	}
 
@@ -345,19 +346,19 @@ func TestLoadStandardLicenses(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(reversedLicense, raw) {
-		t.Errorf("LoadStandardLicenses(): output is not match with raw data in: %s", listLicenses)
+		t.Errorf("loadStandardLicenses(): output is not match with raw data in: %s", listLicenses)
 	}
 }
 
-func TestLoadExceptionLicenses(t *testing.T) {
-	l, err := LoadExceptionLicenses()
+func Test_loadExceptionLicenses(t *testing.T) {
+	l, err := loadExceptionLicenses()
 	if err != nil {
-		t.Errorf("LoadExceptionLicenses() got error: %v", err)
+		t.Errorf("loadExceptionLicenses() got error: %v", err)
 		return
 	}
 	reversedLicense, err := json.Marshal(l)
 	if err != nil {
-		t.Errorf("LoadExceptionLicenses() output can't reverse")
+		t.Errorf("loadExceptionLicenses() output can't reverse")
 		return
 	}
 
@@ -379,7 +380,7 @@ func TestLoadExceptionLicenses(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(reversedLicense, raw) {
-		t.Errorf("LoadExceptionLicenses(): output is not match with raw data in: %s", listLicenses)
+		t.Errorf("loadExceptionLicenses(): output is not match with raw data in: %s", listLicenses)
 	}
 }
 
@@ -400,7 +401,7 @@ func Test_license_contains(t *testing.T) {
 			name: "Contains",
 			l:    exampleLicense,
 			info: LicenseInfo{
-				ID:           "AGPL-3.0",
+				LicenseID:    "AGPL-3.0",
 				Name:         "GNU Affero General Public License v3.0",
 				IsDeprecated: true,
 				References: []string{
@@ -414,7 +415,7 @@ func Test_license_contains(t *testing.T) {
 			name: "Wrong ID",
 			l:    exampleLicense,
 			info: LicenseInfo{
-				ID:           "AGPL-3.1",
+				LicenseID:    "AGPL-3.1",
 				Name:         "GNU Affero General Public License v3.0",
 				IsDeprecated: true,
 				References: []string{
@@ -428,7 +429,7 @@ func Test_license_contains(t *testing.T) {
 			name: "Wrong Name",
 			l:    exampleLicense,
 			info: LicenseInfo{
-				ID:           "AGPL-3.0",
+				LicenseID:    "AGPL-3.0",
 				Name:         "GNU Affero General Public License v3.1",
 				IsDeprecated: true,
 				References: []string{
@@ -442,7 +443,7 @@ func Test_license_contains(t *testing.T) {
 			name: "Wrong Deprecated",
 			l:    exampleLicense,
 			info: LicenseInfo{
-				ID:           "AGPL-3.0",
+				LicenseID:    "AGPL-3.0",
 				Name:         "GNU Affero General Public License v3.0",
 				IsDeprecated: false,
 				References: []string{
@@ -456,7 +457,7 @@ func Test_license_contains(t *testing.T) {
 			name: "Wrong References - different",
 			l:    exampleLicense,
 			info: LicenseInfo{
-				ID:           "AGPL-3.0",
+				LicenseID:    "AGPL-3.0",
 				Name:         "GNU Affero General Public License v3.0",
 				IsDeprecated: true,
 				References: []string{
@@ -470,7 +471,7 @@ func Test_license_contains(t *testing.T) {
 			name: "Wrong References - miss",
 			l:    exampleLicense,
 			info: LicenseInfo{
-				ID:           "AGPL-3.0",
+				LicenseID:    "AGPL-3.0",
 				Name:         "GNU Affero General Public License v3.0",
 				IsDeprecated: true,
 				References: []string{
@@ -483,7 +484,7 @@ func Test_license_contains(t *testing.T) {
 			name: "Wrong References - more",
 			l:    exampleLicense,
 			info: LicenseInfo{
-				ID:           "AGPL-3.0",
+				LicenseID:    "AGPL-3.0",
 				Name:         "GNU Affero General Public License v3.0",
 				IsDeprecated: true,
 				References: []string{
@@ -521,7 +522,7 @@ func Test_exception_contains(t *testing.T) {
 			name: "Contains",
 			e:    exampleExceptionLicense,
 			info: LicenseInfo{
-				ID:           "Libtool-exception",
+				LicenseID:    "Libtool-exception",
 				Name:         "Libtool Exception",
 				IsDeprecated: false,
 				References: []string{
@@ -534,7 +535,7 @@ func Test_exception_contains(t *testing.T) {
 			name: "Wrong ID",
 			e:    exampleExceptionLicense,
 			info: LicenseInfo{
-				ID:           "Libtool-exception-12",
+				LicenseID:    "Libtool-exception-12",
 				Name:         "Libtool Exception",
 				IsDeprecated: false,
 				References: []string{
@@ -547,7 +548,7 @@ func Test_exception_contains(t *testing.T) {
 			name: "Wrong Name",
 			e:    exampleExceptionLicense,
 			info: LicenseInfo{
-				ID:           "Libtool-exception",
+				LicenseID:    "Libtool-exception",
 				Name:         "Libtool 123 Exception",
 				IsDeprecated: false,
 				References: []string{
@@ -560,7 +561,7 @@ func Test_exception_contains(t *testing.T) {
 			name: "Wrong Deprecated",
 			e:    exampleExceptionLicense,
 			info: LicenseInfo{
-				ID:           "Libtool-exception",
+				LicenseID:    "Libtool-exception",
 				Name:         "Libtool Exception",
 				IsDeprecated: true,
 				References: []string{
@@ -573,7 +574,7 @@ func Test_exception_contains(t *testing.T) {
 			name: "Wrong References - different",
 			e:    exampleExceptionLicense,
 			info: LicenseInfo{
-				ID:           "Libtool-exception",
+				LicenseID:    "Libtool-exception",
 				Name:         "Libtool Exception",
 				IsDeprecated: false,
 				References: []string{
@@ -586,7 +587,7 @@ func Test_exception_contains(t *testing.T) {
 			name: "Wrong References - miss",
 			e:    exampleExceptionLicense,
 			info: LicenseInfo{
-				ID:           "Libtool-exception",
+				LicenseID:    "Libtool-exception",
 				Name:         "Libtool Exception",
 				IsDeprecated: true,
 				References:   []string{},
@@ -597,7 +598,7 @@ func Test_exception_contains(t *testing.T) {
 			name: "Wrong References - more",
 			e:    exampleExceptionLicense,
 			info: LicenseInfo{
-				ID:           "Libtool-exception",
+				LicenseID:    "Libtool-exception",
 				Name:         "Libtool Exception",
 				IsDeprecated: true,
 				References: []string{
@@ -612,6 +613,125 @@ func Test_exception_contains(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.e.contains(tt.info); got != tt.want {
 				t.Errorf("exception.contains() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLicenseInfo_LicenseDataPath(t *testing.T) {
+	tests := []struct {
+		name        string
+		licenseInfo LicenseInfo
+		want        string
+	}{
+		{
+			name: "Emtpy id",
+			licenseInfo: LicenseInfo{
+				LicenseID: "",
+			},
+			want: "",
+		},
+		{
+			name: "Full name",
+			licenseInfo: LicenseInfo{
+				LicenseID: "AAL",
+			},
+			want: "AAL.txt",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.licenseInfo.LicenseDataPath(); got != tt.want {
+				t.Errorf("LicenseInfo.LicenseDataPath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoadLicenseData(t *testing.T) {
+	tests := []struct {
+		name    string
+		argInfo LicenseInfo
+		want    LicenseData
+		wantErr bool
+	}{
+		{
+			name: "standard license",
+			argInfo: LicenseInfo{
+				LicenseID: "0BSD",
+			},
+			want: LicenseData{
+				LicenseID: "0BSD",
+				Content: []byte(`Copyright (C) 2006 by Rob Landley <rob@landley.net>
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+`),
+			},
+			wantErr: false,
+		},
+		{
+			name: "exception license",
+			argInfo: LicenseInfo{
+				LicenseID: "Libtool-exception",
+			},
+			want: LicenseData{
+				LicenseID: "Libtool-exception",
+				Content: []byte(`As a special exception to the GNU General Public License, if you distribute this file as part of a program or library that is built using GNU Libtool, you may include this file under the same distribution terms that you use for the rest of that program.
+`),
+			},
+			wantErr: false,
+		},
+		{
+			name: "wrong license id",
+			argInfo: LicenseInfo{
+				LicenseID: "it's not real",
+			},
+			want:    LicenseData{},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := LoadLicenseData(tt.argInfo)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LoadLicenseData() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("LoadLicenseData() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+	licenseInfo, err := GetLicenseInfo()
+	if err != nil {
+		t.Errorf("GetLicenseInfo() error = %v", err)
+		return
+	}
+	for _, licenseI := range licenseInfo {
+		t.Run(licenseI.LicenseID, func(t *testing.T) {
+			actual, err := LoadLicenseData(licenseI)
+			if err != nil {
+				t.Errorf("LoadLicenseData() error = %v", err)
+				return
+			}
+			if actual.LicenseID != licenseI.LicenseID {
+				t.Errorf("GetLicenseInfo() = %v, want %v", actual.LicenseID, licenseI.LicenseID)
+				return
+			}
+
+			path := licenseI.LicenseDataPath()
+			expectedData, _ := data.Asset(path)
+			if !reflect.DeepEqual(actual.Content, expectedData) {
+				t.Errorf("GetLicenseInfo() = %v, want %v", string(actual.Content), string(expectedData))
 			}
 		})
 	}
