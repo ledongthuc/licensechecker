@@ -3,6 +3,7 @@ package data
 import (
 	"encoding/json"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/ledongthuc/licensechecker/data/data"
@@ -196,8 +197,9 @@ func convertExceptionLicenses(container map[string]LicenseInfo, ls exception) er
 
 // LicenseInfo contains meta data of license like ID, nice name, reference urls/resources or license is deprecated
 type LicenseData struct {
-	LicenseID string
-	Content   []byte
+	LicenseID  string
+	Content    []byte
+	RawContent []byte
 }
 
 // LoadLicenseData will load license content base on their info. It will take care to check license from spdx or custom source
@@ -211,5 +213,6 @@ func LoadLicenseData(licenseInfo LicenseInfo) (LicenseData, error) {
 		LicenseID: licenseInfo.LicenseID,
 	}
 	result.Content = raw
+	result.RawContent = regexp.MustCompile(`\r?\n`).ReplaceAll(raw, []byte(" "))
 	return result, nil
 }

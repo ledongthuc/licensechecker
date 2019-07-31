@@ -2,6 +2,7 @@ Quick notes:
 
 # Library API
 
+
 glicense.Detect("MIT License Copyright (c) Permission is hereby granted...")
 glicense.DetectFromPath("/path/to/source/of/license/file")
 glicense.DetectFromURL("https://github.com/abc/")

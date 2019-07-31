@@ -2,7 +2,9 @@ package data
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/ledongthuc/licensechecker/data/data"
@@ -675,6 +677,7 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
 OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 `),
+				RawContent: []byte(`Copyright (C) 2006 by Rob Landley <rob@landley.net>  Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted.  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. `),
 			},
 			wantErr: false,
 		},
@@ -687,6 +690,7 @@ PERFORMANCE OF THIS SOFTWARE.
 				LicenseID: "Libtool-exception",
 				Content: []byte(`As a special exception to the GNU General Public License, if you distribute this file as part of a program or library that is built using GNU Libtool, you may include this file under the same distribution terms that you use for the rest of that program.
 `),
+				RawContent: []byte(`As a special exception to the GNU General Public License, if you distribute this file as part of a program or library that is built using GNU Libtool, you may include this file under the same distribution terms that you use for the rest of that program. `),
 			},
 			wantErr: false,
 		},
@@ -707,6 +711,8 @@ PERFORMANCE OF THIS SOFTWARE.
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
+				fmt.Println("DEBUG: ", string(got.RawContent))
+				fmt.Println("DEBUG: ", string(tt.want.RawContent))
 				t.Errorf("LoadLicenseData() = %v, want %v", got, tt.want)
 			}
 		})
@@ -732,6 +738,11 @@ PERFORMANCE OF THIS SOFTWARE.
 			expectedData, _ := data.Asset(path)
 			if !reflect.DeepEqual(actual.Content, expectedData) {
 				t.Errorf("GetLicenseInfo() = %v, want %v", string(actual.Content), string(expectedData))
+			}
+
+			expectedRawData := regexp.MustCompile(`\r?\n`).ReplaceAll(expectedData, []byte(" "))
+			if !reflect.DeepEqual(actual.RawContent, expectedRawData) {
+				t.Errorf("GetLicenseInfo() raw = %v, want raw %v", string(actual.Content), string(expectedData))
 			}
 		})
 	}
