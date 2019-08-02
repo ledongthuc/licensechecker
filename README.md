@@ -2,6 +2,10 @@ Quick notes:
 
 # Library API
 
+glicense.All()
+glicense.AllInfo()
+glicense.GetByInfo()
+glicense.SearchByName()
 
 glicense.Detect("MIT License Copyright (c) Permission is hereby granted...")
 glicense.DetectFromPath("/path/to/source/of/license/file")

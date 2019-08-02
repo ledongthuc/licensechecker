@@ -1,13 +1,10 @@
 package licensechecker
 
 import (
-	"encoding/json"
-	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/ledongthuc/licensechecker/internal/data"
-	"github.com/ledongthuc/licensechecker/internal/toc"
 	"github.com/pkg/errors"
 )
 
@@ -19,94 +16,6 @@ const (
 var (
 	ErrorUninitiatedContainer = errors.New("Can't compose licenses into uninitiated container")
 )
-
-// license defines structure of standard license from spdx format
-type license struct {
-	LicenseListVersion string `json:"licenseListVersion"`
-	Licenses           []struct {
-		Reference             string   `json:"reference"`
-		IsDeprecatedLicenseID bool     `json:"isDeprecatedLicenseId"`
-		DetailsURL            string   `json:"detailsUrl"`
-		ReferenceNumber       string   `json:"referenceNumber"`
-		Name                  string   `json:"name"`
-		LicenseID             string   `json:"licenseId"`
-		SeeAlso               []string `json:"seeAlso"`
-		IsOsiApproved         bool     `json:"isOsiApproved"`
-		IsFsfLibre            bool     `json:"isFsfLibre,omitempty"`
-	} `json:"licenses"`
-	ReleaseDate string `json:"releaseDate"`
-}
-
-// contains will check a standard license info is valid and exist
-func (e license) contains(info LicenseInfo) bool {
-	for _, exception := range e.Licenses {
-		if info.LicenseID == exception.LicenseID &&
-			info.Name == exception.Name &&
-			info.IsDeprecated == exception.IsDeprecatedLicenseID &&
-			reflect.DeepEqual(info.References, exception.SeeAlso) {
-			return true
-		}
-	}
-	return false
-}
-
-// loadStandardLicenses loads all standard licenses from asset resouce
-func loadStandardLicenses() (license, error) {
-	raw, err := toc.Asset(listLicenses)
-	if err != nil {
-		return license{}, errors.Wrap(err, "Error when load license info")
-	}
-
-	var standardLicenses license
-	err = json.Unmarshal(raw, &standardLicenses)
-	if err != nil {
-		return license{}, errors.Wrap(err, "Error when parsing license info")
-	}
-	return standardLicenses, nil
-}
-
-// exception defines structure of exception license from spdx format
-type exception struct {
-	LicenseListVersion string `json:"licenseListVersion"`
-	ReleaseDate        string `json:"releaseDate"`
-	Exceptions         []struct {
-		Reference             string   `json:"reference"`
-		IsDeprecatedLicenseID bool     `json:"isDeprecatedLicenseId"`
-		DetailsURL            string   `json:"detailsUrl"`
-		ReferenceNumber       string   `json:"referenceNumber"`
-		Name                  string   `json:"name"`
-		SeeAlso               []string `json:"seeAlso"`
-		LicenseExceptionID    string   `json:"licenseExceptionId"`
-	} `json:"exceptions"`
-}
-
-// contains will check a exception license info is valid and exist
-func (e exception) contains(info LicenseInfo) bool {
-	for _, exception := range e.Exceptions {
-		if info.LicenseID == exception.LicenseExceptionID &&
-			info.Name == exception.Name &&
-			info.IsDeprecated == exception.IsDeprecatedLicenseID &&
-			reflect.DeepEqual(info.References, exception.SeeAlso) {
-			return true
-		}
-	}
-	return false
-}
-
-// loadExceptionLicenses loads all standard licenses from asset resouce
-func loadExceptionLicenses() (exception, error) {
-	var exceptionLicense exception
-	raw, err := toc.Asset(listExceptions)
-	if err != nil {
-		return exception{}, errors.Wrap(err, "Error when load main license info")
-	}
-
-	err = json.Unmarshal(raw, &exceptionLicense)
-	if err != nil {
-		return exception{}, errors.Wrap(err, "Error when parsing license info")
-	}
-	return exceptionLicense, nil
-}
 
 // LicenseInfo contains meta data of license like ID, nice name, reference urls/resources or license is deprecated
 type LicenseInfo struct {
@@ -136,28 +45,33 @@ func (l LicenseInfo) LicenseDataPath() string {
 	return pathBuilder.String()
 }
 
-// GetLicenseInfo will get all license's info. It's map with key-par value to easier data query.
-func GetLicenseInfo() (map[string]LicenseInfo, error) {
-	result := make(map[string]LicenseInfo)
-
-	// standard license
+// AllInfo will get all license's info. It's map with key-par value to easier data query.
+func AllInfo() ([]LicenseInfo, error) {
+	// Load licenses
 	standardLicenses, err := loadStandardLicenses()
 	if err != nil {
-		return result, err
+		return []LicenseInfo{}, err
 	}
-	err = convertStandardLicenses(result, standardLicenses)
-	if err != nil {
-		return result, err
-	}
-
-	// exception license
 	exceptionLicenses, err := loadExceptionLicenses()
 	if err != nil {
-		return result, err
+		return []LicenseInfo{}, err
 	}
-	err = convertExceptionLicenses(result, exceptionLicenses)
+
+	// Merge license
+	merging := make(map[string]LicenseInfo)
+	err = convertStandardLicenses(merging, standardLicenses)
 	if err != nil {
-		return result, err
+		return []LicenseInfo{}, err
+	}
+
+	err = convertExceptionLicenses(merging, exceptionLicenses)
+	if err != nil {
+		return []LicenseInfo{}, err
+	}
+
+	result := make([]LicenseInfo, 0, len(merging))
+	for _, m := range merging {
+		result = append(result, m)
 	}
 
 	return result, nil
@@ -214,5 +128,31 @@ func LoadLicenseData(licenseInfo LicenseInfo) (LicenseData, error) {
 	}
 	result.Content = raw
 	result.RawContent = regexp.MustCompile(`\r?\n`).ReplaceAll(raw, []byte(" "))
+	return result, nil
+}
+
+type License struct {
+	LicenseInfo
+	LicenseData
+}
+
+func All() ([]License, error) {
+	info, err := AllInfo()
+	if err != nil {
+		return []License{}, err
+	}
+
+	result := make([]License, 0, len(info))
+	for _, infoItem := range info {
+		data, err := LoadLicenseData(infoItem)
+		if err != nil {
+			return []License{}, err
+		}
+		result = append(result, License{
+			LicenseInfo: infoItem,
+			LicenseData: data,
+		})
+	}
+
 	return result, nil
 }
