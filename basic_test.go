@@ -94,7 +94,7 @@ const exampleExceptionLicenseRaw = `{
   ]
 }`
 
-func TestLoadLicenseData(t *testing.T) {
+func TestAllInfo(t *testing.T) {
 	m, err := AllInfo()
 	if err != nil {
 		t.Errorf("AllInfo() got error: %v", err)
@@ -125,7 +125,7 @@ func TestLoadLicenseData(t *testing.T) {
 	}
 }
 
-func TestLicenseInfo_LicenseDataPath(t *testing.T) {
+func TestLicenseInfo_LicenseContentPath(t *testing.T) {
 	tests := []struct {
 		name        string
 		licenseInfo LicenseInfo
@@ -148,18 +148,18 @@ func TestLicenseInfo_LicenseDataPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.licenseInfo.LicenseDataPath(); got != tt.want {
-				t.Errorf("LicenseInfo.LicenseDataPath() = %v, want %v", got, tt.want)
+			if got := tt.licenseInfo.LicenseContentPath(); got != tt.want {
+				t.Errorf("LicenseInfo.LicenseContentPath() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestAllInfo(t *testing.T) {
+func TestLicenseInfo_LoadLicenseContent(t *testing.T) {
 	tests := []struct {
 		name    string
 		argInfo LicenseInfo
-		want    LicenseData
+		want    LicenseContent
 		wantErr bool
 	}{
 		{
@@ -167,7 +167,7 @@ func TestAllInfo(t *testing.T) {
 			argInfo: LicenseInfo{
 				LicenseID: "0BSD",
 			},
-			want: LicenseData{
+			want: LicenseContent{
 				LicenseID: "0BSD",
 				Content: []byte(`Copyright (C) 2006 by Rob Landley <rob@landley.net>
 
@@ -191,7 +191,7 @@ PERFORMANCE OF THIS SOFTWARE.
 			argInfo: LicenseInfo{
 				LicenseID: "Libtool-exception",
 			},
-			want: LicenseData{
+			want: LicenseContent{
 				LicenseID: "Libtool-exception",
 				Content: []byte(`As a special exception to the GNU General Public License, if you distribute this file as part of a program or library that is built using GNU Libtool, you may include this file under the same distribution terms that you use for the rest of that program.
 `),
@@ -204,19 +204,19 @@ PERFORMANCE OF THIS SOFTWARE.
 			argInfo: LicenseInfo{
 				LicenseID: "it's not real",
 			},
-			want:    LicenseData{},
+			want:    LicenseContent{},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := LoadLicenseData(tt.argInfo)
+			got, err := tt.argInfo.LoadLicenseContent()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("LoadLicenseData() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("LoadLicenseContent() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("LoadLicenseData() = %v, want %v", got, tt.want)
+				t.Errorf("LoadLicenseContent() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -227,9 +227,9 @@ PERFORMANCE OF THIS SOFTWARE.
 	}
 	for _, licenseI := range licenseInfo {
 		t.Run(licenseI.LicenseID, func(t *testing.T) {
-			actual, err := LoadLicenseData(licenseI)
+			actual, err := licenseI.LoadLicenseContent()
 			if err != nil {
-				t.Errorf("LoadLicenseData() error = %v", err)
+				t.Errorf("LoadLicenseContent() error = %v", err)
 				return
 			}
 			if actual.LicenseID != licenseI.LicenseID {
@@ -237,7 +237,7 @@ PERFORMANCE OF THIS SOFTWARE.
 				return
 			}
 
-			path := licenseI.LicenseDataPath()
+			path := licenseI.LicenseContentPath()
 			expectedData, _ := data.Asset(path)
 			if !reflect.DeepEqual(actual.Content, expectedData) {
 				t.Errorf("GetLicenseInfo() = %v, want %v", string(actual.Content), string(expectedData))
@@ -258,13 +258,13 @@ func TestAll(t *testing.T) {
 		return
 	}
 	for _, license := range licenses {
-		expectedLicenseData, err := LoadLicenseData(license.LicenseInfo)
+		expectedLicenseContent, err := license.LicenseInfo.LoadLicenseContent()
 		if err != nil {
-			t.Errorf("LoadLicenseData(%s) error = %v", license.LicenseInfo.Name, err)
+			t.Errorf("LoadLicenseContent(%s) error = %v", license.LicenseInfo.Name, err)
 			return
 		}
-		if !reflect.DeepEqual(license.LicenseData, expectedLicenseData) {
-			t.Errorf("All() = %v, want %v", license.LicenseData, expectedLicenseData)
+		if !reflect.DeepEqual(license.LicenseContent, expectedLicenseContent) {
+			t.Errorf("All() = %v, want %v", license.LicenseContent, expectedLicenseContent)
 		}
 	}
 }

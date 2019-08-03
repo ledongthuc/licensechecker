@@ -17,7 +17,13 @@ var (
 	ErrorUninitiatedContainer = errors.New("Can't compose licenses into uninitiated container")
 )
 
-// LicenseInfo contains meta data of license like ID, nice name, reference urls/resources or license is deprecated
+// License contains meta data and real license content. All you need here
+type License struct {
+	LicenseInfo
+	LicenseContent
+}
+
+// LicenseInfo contains meta data of license. It doesn't contain license content, just info.
 type LicenseInfo struct {
 	LicenseID    string
 	Name         string
@@ -25,27 +31,36 @@ type LicenseInfo struct {
 	IsDeprecated bool
 }
 
-// LicenseDataPath compose the path of data assets
-func (l LicenseInfo) LicenseDataPath() string {
-	if l.LicenseID == "" {
-		return ""
-	}
-
-	// Special cases
-	if l.LicenseID == "Nokia-Qt-exception-1.1" {
-		return "Nokia-Qt-exception-1.1.txt"
-	}
-
-	var pathBuilder strings.Builder
-	if l.IsDeprecated {
-		pathBuilder.WriteString("deprecated_")
-	}
-	pathBuilder.WriteString(l.LicenseID)
-	pathBuilder.WriteString(".txt")
-	return pathBuilder.String()
+// LicenseContent contains license's content
+type LicenseContent struct {
+	LicenseID  string
+	Content    []byte
+	RawContent []byte
 }
 
-// AllInfo will get all license's info. It's map with key-par value to easier data query.
+// All will loads and returns all license that have with their content and me meta data.
+func All() ([]License, error) {
+	info, err := AllInfo()
+	if err != nil {
+		return []License{}, err
+	}
+
+	result := make([]License, 0, len(info))
+	for _, infoItem := range info {
+		data, err := infoItem.LoadLicenseContent()
+		if err != nil {
+			return []License{}, err
+		}
+		result = append(result, License{
+			LicenseInfo:    infoItem,
+			LicenseContent: data,
+		})
+	}
+
+	return result, nil
+}
+
+// AllInfo will get all license's information that doesn't contains license's content, just light weight meta data.
 func AllInfo() ([]LicenseInfo, error) {
 	// Load licenses
 	standardLicenses, err := loadStandardLicenses()
@@ -75,6 +90,42 @@ func AllInfo() ([]LicenseInfo, error) {
 	}
 
 	return result, nil
+}
+
+// TODO: change to receiver method
+// LoadLicenseContent will load license content base on their info. It will take care to check license from spdx or custom source
+func (licenseInfo LicenseInfo) LoadLicenseContent() (LicenseContent, error) {
+	raw, err := data.Asset(licenseInfo.LicenseContentPath())
+	if err != nil {
+		return LicenseContent{}, errors.Wrap(err, "Error to load data from assets '"+licenseInfo.LicenseContentPath()+"'")
+	}
+
+	result := LicenseContent{
+		LicenseID: licenseInfo.LicenseID,
+	}
+	result.Content = raw
+	result.RawContent = regexp.MustCompile(`\r?\n`).ReplaceAll(raw, []byte(" "))
+	return result, nil
+}
+
+// LicenseContentPath compose the path of data assets
+func (l LicenseInfo) LicenseContentPath() string {
+	if l.LicenseID == "" {
+		return ""
+	}
+
+	// Special cases
+	if l.LicenseID == "Nokia-Qt-exception-1.1" {
+		return "Nokia-Qt-exception-1.1.txt"
+	}
+
+	var pathBuilder strings.Builder
+	if l.IsDeprecated {
+		pathBuilder.WriteString("deprecated_")
+	}
+	pathBuilder.WriteString(l.LicenseID)
+	pathBuilder.WriteString(".txt")
+	return pathBuilder.String()
 }
 
 // convertStandardLicenses will load standard licenses into a map.
@@ -107,52 +158,4 @@ func convertExceptionLicenses(container map[string]LicenseInfo, ls exception) er
 		}
 	}
 	return nil
-}
-
-// LicenseInfo contains meta data of license like ID, nice name, reference urls/resources or license is deprecated
-type LicenseData struct {
-	LicenseID  string
-	Content    []byte
-	RawContent []byte
-}
-
-// LoadLicenseData will load license content base on their info. It will take care to check license from spdx or custom source
-func LoadLicenseData(licenseInfo LicenseInfo) (LicenseData, error) {
-	raw, err := data.Asset(licenseInfo.LicenseDataPath())
-	if err != nil {
-		return LicenseData{}, errors.Wrap(err, "Error to load data from assets '"+licenseInfo.LicenseDataPath()+"'")
-	}
-
-	result := LicenseData{
-		LicenseID: licenseInfo.LicenseID,
-	}
-	result.Content = raw
-	result.RawContent = regexp.MustCompile(`\r?\n`).ReplaceAll(raw, []byte(" "))
-	return result, nil
-}
-
-type License struct {
-	LicenseInfo
-	LicenseData
-}
-
-func All() ([]License, error) {
-	info, err := AllInfo()
-	if err != nil {
-		return []License{}, err
-	}
-
-	result := make([]License, 0, len(info))
-	for _, infoItem := range info {
-		data, err := LoadLicenseData(infoItem)
-		if err != nil {
-			return []License{}, err
-		}
-		result = append(result, License{
-			LicenseInfo: infoItem,
-			LicenseData: data,
-		})
-	}
-
-	return result, nil
 }
