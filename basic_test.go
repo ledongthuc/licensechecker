@@ -3,6 +3,8 @@ package licensechecker
 import (
 	"reflect"
 	"regexp"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/ledongthuc/licensechecker/internal/data"
@@ -122,6 +124,258 @@ func TestAllInfo(t *testing.T) {
 			continue
 		}
 		t.Errorf("License '%s' doesn't exist in standard licenses and exception licenses", licenseInfo.LicenseID)
+	}
+}
+
+func TestGetByInfo(t *testing.T) {
+	tests := []struct {
+		name        string
+		licenseInfo LicenseInfo
+		want        License
+		wantErr     bool
+	}{
+		{
+			name:        "Empty Info",
+			licenseInfo: LicenseInfo{},
+			want:        License{},
+			wantErr:     true,
+		},
+		{
+			name: "Wrong Info",
+			licenseInfo: LicenseInfo{
+				LicenseID: "1BSD",
+				Name:      "BSD Zero Clause License",
+				References: []string{
+					"http://landley.net/toybox/license.html",
+				},
+				IsDeprecated: false,
+			},
+			want:    License{},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetByInfo(tt.licenseInfo)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetByInfo() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetByInfo() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
+	info, err := AllInfo()
+	if err != nil {
+		t.Errorf("AllInfo() = %v", err)
+		return
+	}
+	for _, infoItem := range info {
+		license, err := GetByInfo(infoItem)
+		if err != nil {
+			t.Errorf("AllInfo(%s) got error: %v", infoItem.Name, err)
+			continue
+		}
+		if infoItem.LicenseID != license.LicenseContent.LicenseID {
+			t.Errorf("AllInfo(%s) expected licenseID = %v, want %v", infoItem.Name, infoItem.LicenseID, license.LicenseContent.LicenseID)
+		}
+	}
+}
+
+func TestSearchByName(t *testing.T) {
+
+	L0BSD, _ := GetByInfo(LicenseInfo{
+		LicenseID: "0BSD",
+		Name:      "BSD Zero Clause License",
+		References: []string{
+			"http://landley.net/toybox/license.html",
+		},
+		IsDeprecated: false,
+	})
+	AGPL10, _ := GetByInfo(LicenseInfo{
+		LicenseID: "AGPL-1.0",
+		Name:      "Affero General Public License v1.0",
+		References: []string{
+			"http://www.affero.org/oagpl.html",
+		},
+		IsDeprecated: true,
+	})
+	AGPL10Only, _ := GetByInfo(LicenseInfo{
+		LicenseID: "AGPL-1.0-only",
+		Name:      "Affero General Public License v1.0 only",
+		References: []string{
+			"http://www.affero.org/oagpl.html",
+		},
+		IsDeprecated: false,
+	})
+	AGPL10OrLater, _ := GetByInfo(LicenseInfo{
+		LicenseID: "AGPL-1.0-or-later",
+		Name:      "Affero General Public License v1.0 or later",
+		References: []string{
+			"http://www.affero.org/oagpl.html",
+		},
+		IsDeprecated: false,
+	})
+	AGPL30, _ := GetByInfo(LicenseInfo{
+		LicenseID: "AGPL-3.0",
+		Name:      "GNU Affero General Public License v3.0",
+		References: []string{
+			"https://www.gnu.org/licenses/agpl.txt",
+			"https://opensource.org/licenses/AGPL-3.0",
+		},
+		IsDeprecated: true,
+	})
+	AGPL30Only, _ := GetByInfo(LicenseInfo{
+		LicenseID: "AGPL-3.0-only",
+		Name:      "GNU Affero General Public License v3.0 only",
+		References: []string{
+			"https://www.gnu.org/licenses/agpl.txt",
+			"https://opensource.org/licenses/AGPL-3.0",
+		},
+		IsDeprecated: false,
+	})
+	AGPL30OrLater, _ := GetByInfo(LicenseInfo{
+		LicenseID: "AGPL-3.0-or-later",
+		Name:      "GNU Affero General Public License v3.0 or later",
+		References: []string{
+			"https://www.gnu.org/licenses/agpl.txt",
+			"https://opensource.org/licenses/AGPL-3.0",
+		},
+		IsDeprecated: false,
+	})
+
+	type args struct {
+		partOfName    string
+		caseSensitive bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []License
+		wantErr bool
+	}{
+		{
+			name: "Success - Full name search",
+			args: args{
+				partOfName:    "BSD Zero Clause License",
+				caseSensitive: true,
+			},
+			want: []License{
+				L0BSD,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case sensitive = true, found",
+			args: args{
+				partOfName:    "Affero General Public",
+				caseSensitive: false,
+			},
+			want: []License{
+				AGPL10,
+				AGPL10Only,
+				AGPL10OrLater,
+				AGPL30,
+				AGPL30Only,
+				AGPL30OrLater,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case sensitive = true, found 2",
+			args: args{
+				partOfName:    "affero general public",
+				caseSensitive: false,
+			},
+			want: []License{
+				AGPL10,
+				AGPL10Only,
+				AGPL10OrLater,
+				AGPL30,
+				AGPL30Only,
+				AGPL30OrLater,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case sensitive = true, not found",
+			args: args{
+				partOfName:    "affere",
+				caseSensitive: false,
+			},
+			want:    []License{},
+			wantErr: false,
+		},
+		{
+			name: "Success - don't have any",
+			args: args{
+				partOfName:    "Ahola",
+				caseSensitive: false,
+			},
+			want:    []License{},
+			wantErr: false,
+		},
+		{
+			name: "Case sensitive = true, found",
+			args: args{
+				partOfName:    "Affero General Public",
+				caseSensitive: true,
+			},
+			want: []License{
+				AGPL10,
+				AGPL10Only,
+				AGPL10OrLater,
+				AGPL30,
+				AGPL30Only,
+				AGPL30OrLater,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case sensitive = true, not found",
+			args: args{
+				partOfName:    "affero general public",
+				caseSensitive: true,
+			},
+			want:    []License{},
+			wantErr: false,
+		},
+		{
+			name: "Success - don't have any",
+			args: args{
+				partOfName:    "Ahola",
+				caseSensitive: false,
+			},
+			want:    []License{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := SearchByName(tt.args.partOfName, tt.args.caseSensitive)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SearchByName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) != len(tt.want) {
+				t.Errorf("SearchByName() = length: %v, want length: %v", len(got), len(tt.want))
+				return
+			}
+			sort.SliceStable(got, func(i, j int) bool {
+				return strings.Compare(got[i].LicenseInfo.LicenseID, got[j].LicenseInfo.LicenseID) < 0
+			})
+			sort.SliceStable(tt.want, func(i, j int) bool {
+				return strings.Compare(tt.want[i].LicenseInfo.LicenseID, tt.want[j].LicenseInfo.LicenseID) < 0
+			})
+
+			for index := range got {
+				if !reflect.DeepEqual(got[index], tt.want[index]) {
+					t.Errorf("SearchByName() result at index: %d, got = %v, want %v", index, got[index].LicenseInfo, tt.want[index].LicenseInfo)
+				}
+			}
+		})
 	}
 }
 

@@ -92,7 +92,48 @@ func AllInfo() ([]LicenseInfo, error) {
 	return result, nil
 }
 
-// TODO: change to receiver method
+// GetByInfo loads full license content base on LicenseInfo
+func GetByInfo(info LicenseInfo) (License, error) {
+	content, err := info.LoadLicenseContent()
+	if err != nil {
+		return License{}, err
+	}
+	return License{
+		LicenseInfo:    info,
+		LicenseContent: content,
+	}, nil
+}
+
+// SearchByName loads full license content base on LicenseInfo
+func SearchByName(partOfName string, caseSensitive bool) ([]License, error) {
+	info, err := AllInfo()
+	if err != nil {
+		return []License{}, err
+	}
+
+	result := []License{}
+	for _, infoItem := range info {
+		if caseSensitive &&
+			!strings.Contains(infoItem.Name, partOfName) {
+			continue
+		} else if !caseSensitive &&
+			!strings.Contains(strings.ToLower(infoItem.Name), strings.ToLower(partOfName)) {
+			continue
+		}
+
+		content, err := infoItem.LoadLicenseContent()
+		if err != nil {
+			return []License{}, err
+		}
+
+		result = append(result, License{
+			LicenseInfo:    infoItem,
+			LicenseContent: content,
+		})
+	}
+	return result, nil
+}
+
 // LoadLicenseContent will load license content base on their info. It will take care to check license from spdx or custom source
 func (licenseInfo LicenseInfo) LoadLicenseContent() (LicenseContent, error) {
 	raw, err := data.Asset(licenseInfo.LicenseContentPath())
