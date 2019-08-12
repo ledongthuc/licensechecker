@@ -2,17 +2,17 @@ Quick notes:
 
 # Library API
 
-glicense.All()
-glicense.AllInfo()
-glicense.GetByInfo()
-glicense.SearchByName()
+[x] glicense.All()
+[x] glicense.AllInfo()
+[x] glicense.GetByInfo()
+[x] glicense.SearchByName()
 
-glicense.Detect("MIT License Copyright (c) Permission is hereby granted...")
-glicense.DetectFromPath("/path/to/source/of/license/file")
-glicense.DetectFromURL("https://github.com/abc/")
+[ ] glicense.Detect("MIT License Copyright (c) Permission is hereby granted...")
+[ ] glicense.DetectFromPath("/path/to/source/of/license/file")
+[ ] glicense.DetectFromURL("https://github.com/abc/")
 
-glicense.Add("MIT License Copyright...", "/path/to/source")
-glicense.AddWithOption("MIT License Copyright...", "/path/to/source", glicense{
+[ ] glicense.Add("MIT License Copyright...", "/path/to/source")
+[ ] glicense.AddWithOption("MIT License Copyright...", "/path/to/source", glicense{
 	ExcludedPattern: "*.sql",
 	IncludedPattern: "*.go",
 	MappingComment: glicense.Mapping {
@@ -23,13 +23,13 @@ glicense.AddWithOption("MIT License Copyright...", "/path/to/source", glicense{
 
 # Commandline
 
-glicense detect "MIT License Copyright (c) Permission is hereby granted..."
-glicense detect -p /path/to/source/
-glicense detect -u https://github.com/abc/
-echo "MIT License Copyright (c) Permission is hereby granted..." | glicense detect
+[ ] glicense detect "MIT License Copyright (c) Permission is hereby granted..."
+[ ] glicense detect -p /path/to/source/
+[ ] glicense detect -u https://github.com/abc/
+[ ] echo "MIT License Copyright (c) Permission is hereby granted..." | glicense detect
 
-glicense add "MIT License Copyright (c) Permission is hereby granted..." /path/to/source/
-glicense add -f /path/to/license/file /path/to/source/
+[ ] glicense add "MIT License Copyright (c) Permission is hereby granted..." /path/to/source/
+[ ] glicense add -f /path/to/license/file /path/to/source/
 
 # REST API
 

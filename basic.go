@@ -136,9 +136,9 @@ func SearchByName(partOfName string, caseSensitive bool) ([]License, error) {
 
 // LoadLicenseContent will load license content base on their info. It will take care to check license from spdx or custom source
 func (licenseInfo LicenseInfo) LoadLicenseContent() (LicenseContent, error) {
-	raw, err := data.Asset(licenseInfo.LicenseContentPath())
+	raw, err := data.Asset(licenseInfo.licenseContentPath())
 	if err != nil {
-		return LicenseContent{}, errors.Wrap(err, "Error to load data from assets '"+licenseInfo.LicenseContentPath()+"'")
+		return LicenseContent{}, errors.Wrap(err, "Error to load data from assets '"+licenseInfo.licenseContentPath()+"'")
 	}
 
 	result := LicenseContent{
@@ -149,8 +149,8 @@ func (licenseInfo LicenseInfo) LoadLicenseContent() (LicenseContent, error) {
 	return result, nil
 }
 
-// LicenseContentPath compose the path of data assets
-func (l LicenseInfo) LicenseContentPath() string {
+// licenseContentPath compose the path of data assets
+func (l LicenseInfo) licenseContentPath() string {
 	if l.LicenseID == "" {
 		return ""
 	}

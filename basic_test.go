@@ -379,7 +379,7 @@ func TestSearchByName(t *testing.T) {
 	}
 }
 
-func TestLicenseInfo_LicenseContentPath(t *testing.T) {
+func TestLicenseInfo_licenseContentPath(t *testing.T) {
 	tests := []struct {
 		name        string
 		licenseInfo LicenseInfo
@@ -402,7 +402,7 @@ func TestLicenseInfo_LicenseContentPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.licenseInfo.LicenseContentPath(); got != tt.want {
+			if got := tt.licenseInfo.licenseContentPath(); got != tt.want {
 				t.Errorf("LicenseInfo.LicenseContentPath() = %v, want %v", got, tt.want)
 			}
 		})
@@ -491,7 +491,7 @@ PERFORMANCE OF THIS SOFTWARE.
 				return
 			}
 
-			path := licenseI.LicenseContentPath()
+			path := licenseI.licenseContentPath()
 			expectedData, _ := data.Asset(path)
 			if !reflect.DeepEqual(actual.Content, expectedData) {
 				t.Errorf("GetLicenseInfo() = %v, want %v", string(actual.Content), string(expectedData))
