@@ -1,4 +1,6 @@
-Quick notes:
+
+[![Built with WeBuild](https://raw.githubusercontent.com/webuild-community/badge/master/svg/WeBuild.svg)](https://webuild.community)
+
 
 # Library API
 
